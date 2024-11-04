@@ -14,14 +14,15 @@ import (
 )
 
 const (
-	IMAGE_WIDTH     int     = 500
-	IMAGE_HEIGHT    int     = 500
-	PERLIN_ALPHA    float64 = 10
-	PERLIN_BETA     float64 = 3
-	PERLIN_N        int32   = 3
-	PERLIN_ZOOM     float64 = 100
-	PARTICULE_SPEED float64 = 1.0
-	PARTICULE_NB    int     = 100
+	IMAGE_WIDTH        int     = 500
+	IMAGE_HEIGHT       int     = 500
+	PERLIN_ALPHA       float64 = 10
+	PERLIN_BETA        float64 = 3
+	PERLIN_N           int32   = 3
+	PERLIN_ZOOM        float64 = 100
+	PARTICULE_SPEED    float64 = 1.0
+	PARTICULE_NB       int     = 100
+	// PERLIN_Z_INCREMENT float64 = 0.01
 )
 
 var PARTICULE_COLOR color.Color = color.RGBA{R: 10, G: 10, B: 250, A: 255}
@@ -59,14 +60,17 @@ func fillImageWithBlack(img *image.RGBA) {
 // refreshImage modifies the underlying RGBA image buffer and updates the canvas image.
 func refreshImage(canvasImage *canvas.Image) {
 	rgba := canvasImage.Image.(*image.RGBA)
+	// var z float64
 
 	for {
 		// fillImageWithBlack(rgba)
+		// z += PERLIN_Z_INCREMENT
 
 		for _, particule := range particules {
+			// force := forceField.Noise3D(float64(particule.X)/PERLIN_ZOOM, float64(particule.Y)/PERLIN_ZOOM, z)
 			force := forceField.Noise2D(float64(particule.X)/PERLIN_ZOOM, float64(particule.Y)/PERLIN_ZOOM)
 
-			angle := force + 1.0*math.Pi
+			angle := force * 2 *math.Pi
 			particule.X += (math.Cos(angle) * PARTICULE_SPEED)
 			particule.Y += (math.Sin(angle) * PARTICULE_SPEED)
 
