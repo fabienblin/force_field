@@ -11,23 +11,28 @@ import (
 	"fyne.io/fyne/v2/app"
 	"fyne.io/fyne/v2/canvas"
 	"github.com/aquilax/go-perlin"
+	"goki.dev/cam/hsl"
 )
 
 const (
-	IMAGE_WIDTH        int     = 500
-	IMAGE_HEIGHT       int     = 500
+	IMAGE_HEIGHT_RATIO int     = 9
+	IMAGE_WIDTH_RATIO  int     = 16
+	IMAGE_SIZE_RATION  int     = 50
+	IMAGE_HEIGHT       int     = IMAGE_HEIGHT_RATIO * IMAGE_SIZE_RATION
+	IMAGE_WIDTH        int     = IMAGE_WIDTH_RATIO * IMAGE_SIZE_RATION
 	PERLIN_ALPHA       float64 = 10
 	PERLIN_BETA        float64 = 3
 	PERLIN_N           int32   = 3
-	PERLIN_ZOOM        float64 = 100
+	PERLIN_ZOOM        float64 = float64(2 * IMAGE_SIZE_RATION)
 	PARTICULE_SPEED    float64 = 1.0
 	PARTICULE_NB       int     = 200
 	PERLIN_Z_INCREMENT float64 = 0.001
 )
 
-var PARTICULE_COLOR color.Color = color.RGBA{R: 10, G: 10, B: 250, A: 255}
-var forceField *perlin.Perlin
-var particules []*Particule
+var (
+	forceField      *perlin.Perlin
+	particules      []*Particule
+)
 
 type Particule struct {
 	InitX         float64
@@ -104,7 +109,9 @@ func refreshImage(canvasImage *canvas.Image) {
 
 				particule.IsOutOfBounds = particule.X < 0 || particule.Y < 0 || particule.X > float64(IMAGE_WIDTH) || particule.Y > float64(IMAGE_HEIGHT)
 
-				rgba.Set(int(particule.X), int(particule.Y), PARTICULE_COLOR)
+				degrees := float32(((force + 1) / 2) * 360)
+				color := hsl.New(degrees, 1, .5).AsRGBA()
+				rgba.Set(int(particule.X), int(particule.Y), color)
 			}
 		}
 
