@@ -21,8 +21,8 @@ const (
 	PERLIN_N           int32   = 3
 	PERLIN_ZOOM        float64 = 100
 	PARTICULE_SPEED    float64 = 1.0
-	PARTICULE_NB       int     = 100
-	// PERLIN_Z_INCREMENT float64 = 0.01
+	PARTICULE_NB       int     = 200
+	PERLIN_Z_INCREMENT float64 = 0.001
 )
 
 var PARTICULE_COLOR color.Color = color.RGBA{R: 10, G: 10, B: 250, A: 255}
@@ -30,8 +30,11 @@ var forceField *perlin.Perlin
 var particules []*Particule
 
 type Particule struct {
-	X float64
-	Y float64
+	InitX         float64
+	InitY         float64
+	X             float64
+	Y             float64
+	IsOutOfBounds bool
 }
 
 func init() {
@@ -45,7 +48,19 @@ func init() {
 
 func initParticules() {
 	for i := 0; i < PARTICULE_NB; i++ {
-		particules = append(particules, &Particule{X: rand.Float64() * float64(IMAGE_WIDTH), Y: rand.Float64() * float64(IMAGE_HEIGHT)})
+		particule := &Particule{X: rand.Float64() * float64(IMAGE_WIDTH), Y: rand.Float64() * float64(IMAGE_HEIGHT)}
+		particule.InitX = particule.X
+		particule.InitY = particule.Y
+
+		particules = append(particules, particule)
+	}
+}
+
+func reInitParticules() {
+	for _, particule := range particules {
+		particule.X = particule.InitX
+		particule.Y = particule.InitY
+		particule.IsOutOfBounds = false
 	}
 }
 
@@ -57,28 +72,45 @@ func fillImageWithBlack(img *image.RGBA) {
 	}
 }
 
+// return true if all particules are out of bounds
+func isParticulesAllOutOfBounds() bool {
+	for _, particule := range particules {
+		if !particule.IsOutOfBounds {
+			return false
+		}
+	}
+
+	return true
+}
+
 // refreshImage modifies the underlying RGBA image buffer and updates the canvas image.
 func refreshImage(canvasImage *canvas.Image) {
 	rgba := canvasImage.Image.(*image.RGBA)
-	// var z float64
+	var z float64
 
 	for {
-		// fillImageWithBlack(rgba)
-		// z += PERLIN_Z_INCREMENT
+		fillImageWithBlack(rgba)
+		for !isParticulesAllOutOfBounds() {
+			for _, particule := range particules {
+				if particule.IsOutOfBounds {
+					continue
+				}
 
-		for _, particule := range particules {
-			// force := forceField.Noise3D(float64(particule.X)/PERLIN_ZOOM, float64(particule.Y)/PERLIN_ZOOM, z)
-			force := forceField.Noise2D(float64(particule.X)/PERLIN_ZOOM, float64(particule.Y)/PERLIN_ZOOM)
+				force := forceField.Noise3D(float64(particule.X)/PERLIN_ZOOM, float64(particule.Y)/PERLIN_ZOOM, z)
 
-			angle := force * 2 *math.Pi
-			particule.X += (math.Cos(angle) * PARTICULE_SPEED)
-			particule.Y += (math.Sin(angle) * PARTICULE_SPEED)
+				angle := force * 2 * math.Pi
+				particule.X += (math.Cos(angle) * PARTICULE_SPEED)
+				particule.Y += (math.Sin(angle) * PARTICULE_SPEED)
 
-			rgba.Set(int(particule.X), int(particule.Y), PARTICULE_COLOR)
+				particule.IsOutOfBounds = particule.X < 0 || particule.Y < 0 || particule.X > float64(IMAGE_WIDTH) || particule.Y > float64(IMAGE_HEIGHT)
+
+				rgba.Set(int(particule.X), int(particule.Y), PARTICULE_COLOR)
+			}
 		}
 
-		// Refresh the canvas image to apply the changes
+		reInitParticules()
 		canvasImage.Refresh()
+		z += PERLIN_Z_INCREMENT
 
 		// Add a delay for smoother transitions
 		time.Sleep(50 * time.Millisecond)
